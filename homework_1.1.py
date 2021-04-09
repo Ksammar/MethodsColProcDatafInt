@@ -28,8 +28,8 @@ if repos.status_code == 200:
 for repo in repos.json():
     print(repo['html_url'])
 
-# username = input("Enter the github username:")
-username = "Konstantin-Buzuev"
+username = input("Enter the github username:")
+# username = "Konstantin-Buzuev"
 path = 'user_repos2.json'
 repos = get_repo(username)
 repos.json()[1]

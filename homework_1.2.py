@@ -14,6 +14,11 @@ def get_weather(city, appid):
 
 
 key = os.getenv('openweather')
+city = 'Samara'
+# city = 'Samara'
+r = get_weather(city, key)
+pprint(dict(r.json()))
+key = os.getenv('openweather')
 city = input('Please insert City: ')
 # city = 'Samara'
 r = get_weather(city, key)
