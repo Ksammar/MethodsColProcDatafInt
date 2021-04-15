@@ -37,6 +37,7 @@ def read_int_words(in_list_words):
             integ.append(int(s_int))
     return integ
 
+
 def read_str_words(in_list_words):
     in_list_words = str(in_list_words)
     length = len(in_list_words)
@@ -74,9 +75,9 @@ def get_vacancy(url, vacancy, header, proxi, page):
     return bs(req.text, "html.parser")
 
 
-def find_hh(soup, url, vacancy, headers, proxies):
+def find_hh(soup, url, vacancy, headers, proxies, counterpage):
     items_info = []
-    for i in range(0, counter_page):
+    for i in range(0, counterpage):
         items = soup.find_all(attrs={"class": "vacancy-serp-item"})
         for el in items:
             info = {}
@@ -113,31 +114,32 @@ def find_hh(soup, url, vacancy, headers, proxies):
     return items_info
 
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                  'Chrome/89.0.4389.114 Safari/537.36'
-}
-proxies = {
-    "http": f"{FreeProxy().get()}"
-    # 'https': 'https://165.227.223.19:3128',
-}
-url = f"https://samara.hh.ru/search/vacancy"
+if __name__ == '__main__':
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/89.0.4389.114 Safari/537.36'
+    }
+    proxies = {
+        "http": f"{FreeProxy().get()}"
+        # 'https': 'https://165.227.223.19:3128',
+    }
+    url = f"https://samara.hh.ru/search/vacancy"
 
-vacancy = input('Please input vacancy: ')
-soup = get_vacancy(url, vacancy, headers, proxies, 0)
+    vacancy = input('Please input vacancy: ')
+    soup = get_vacancy(url, vacancy, headers, proxies, 0)
 
-# soup = get_vacancy(url, "data engineer", headers, proxies, "0")
+    # soup = get_vacancy(url, "data engineer", headers, proxies, "0")
 
-pages = soup.find_all(attrs={"class": "pager-item-not-in-short-range"})
-counter_page = 1
-if pages is not None:
-    res = pages[-1].find("a", attrs={"class": "bloko-button", "rel": "nofollow"})
-    counter_page = int(res.contents[0])
-items_info = []
-print(f'Find {counter_page} pages')
-items_info = find_hh(soup, url, vacancy, headers, proxies)
-print()
-df = pd.DataFrame.from_records(items_info)
-df.to_csv(f'{vacancy}_vacancy.csv', index=False)
-print(f'Create file "{vacancy}_vacancy.csv". Finish work!')
+    pages = soup.find_all(attrs={"class": "pager-item-not-in-short-range"})
+    counter_page = 1
+    if pages is not None:
+        res = pages[-1].find("a", attrs={"class": "bloko-button", "rel": "nofollow"})
+        counter_page = int(res.contents[0])
+    items_info = []
+    print(f'Find {counter_page} pages')
+    items_info = find_hh(soup, url, vacancy, headers, proxies, counter_page)
+    print()
+    df = pd.DataFrame.from_records(items_info)
+    df.to_csv(f'{vacancy}_vacancy.csv', index=False)
 
+    print(f'Create file "{vacancy}_vacancy.csv". Finish work!')
