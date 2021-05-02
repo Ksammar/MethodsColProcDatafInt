@@ -21,7 +21,6 @@ def set_params(in_url):
 class LeroyparserItem(scrapy.Item):
     _id = scrapy.Field()
     name = scrapy.Field(output_processor=TakeFirst())
-    # photos = scrapy.Field(input_processor=MapCompose(get_big_img_url))
     photos = scrapy.Field()
     parameters = scrapy.Field(input_processor=Compose(set_params))
     url = scrapy.Field()
