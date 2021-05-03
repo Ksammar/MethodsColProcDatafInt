@@ -2,8 +2,6 @@ import scrapy
 from scrapy.http import HtmlResponse
 import re
 import json
-from pprint import pprint
-# from urllib.parse import urlencode
 from urllib.parse import quote
 from copy import deepcopy
 from instaparser.items import InstaparserItem
