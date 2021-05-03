@@ -19,9 +19,9 @@ class InstagramSpider(scrapy.Spider):
     user_to_parse_url_template = "/%s"
     user_to_parse = "ai_machine_learning"
     posts_hash = "32b14723a678bd4628d70c1f877b94c9"
-    # "https://www.instagram.com/graphql/query/?query_hash=5aefa9893005572d237da5068082d8d5&variables=%7B%22id%22%3A%2230859820772%22%2C%22include_reel%22%3Atrue%2C%22fetch_mutual%22%3Atrue%2C%22first%22%3A24%7D"
     follow_hash = {'followers': "5aefa9893005572d237da5068082d8d5",
     'followings': "3dec7e2c57367ef3da3d987d89f9dbc8"}
+    variabls_follow = ['followers', 'followings']
     user_hash = "d4d88dc1500312af6f937f7b804c68c3"
     user_variables = {"user_id": "0"}
     followers = []
@@ -70,48 +70,20 @@ class InstagramSpider(scrapy.Spider):
 
     def user_data_parse(self, response: HtmlResponse, username):
         user_id = self.fetch_user_id(response.text, username)
-        # 30859820772
-        # variables = {
-        #     'first': 12,
-        #     'id': user_id
-        # }
         self.follow_variables['id'] = user_id
         variables = deepcopy(self.follow_variables)
         str_variables = self.make_str_variables(variables)
-        # print("$$$")
-        # url = f"{self.graphql_url}query_hash={self.posts_hash}&variables={str_variables}"
-        url = f"{self.graphql_url}query_hash={self.follow_hash['followers']}&variables={str_variables}"
-        # yield response.follow(
-        #     url,
-        #     callback=self.user_post_parse,
-        #     cb_kwargs={
-        #         "username": username,
-        #         "user_id": user_id,
-        #         # на будущее: изучите в чем отличие глубокого копирования
-        #         "variables": deepcopy(variables),
-        #     }
-        # )
-        yield response.follow(
-            url,
-            callback=self.user_followers_parse,
-            cb_kwargs={
-                "username": username,
-                # "user_id": user_id,
-                # на будущее: изучите в чем отличие глубокого копирования
-                "variables": deepcopy(variables),
-            }
-        )
-        url = f"{self.graphql_url}query_hash={self.follow_hash['followings']}&variables={str_variables}"
-        yield response.follow(
-            url,
-            callback=self.user_followings_parse,
-            cb_kwargs={
-                "username": username,
-                # "user_id": user_id,
-                # на будущее: изучите в чем отличие глубокого копирования
-                "variables": deepcopy(variables),
-            }
-        )
+        for i, f_hash in enumerate(self.variabls_follow):
+            url = f"{self.graphql_url}query_hash={self.follow_hash[f_hash[i]]}&variables={str_variables}"
+            yield response.follow(
+                url,
+                callback=self.user_follow_parse,
+                cb_kwargs={
+                    "username": username,
+                    "variables": deepcopy(variables),
+                    "options": i
+                }
+            )
 
     def user_post_parse(self, response: HtmlResponse, username, user_id, variables):
         print()
@@ -147,15 +119,17 @@ class InstagramSpider(scrapy.Spider):
                 }
             )
 
-    def user_followers_parse(self, response: HtmlResponse, username, variables):
+    def user_follow_parse(self, response: HtmlResponse, username, variables, options):
         print()
         data = response.json()
         try:
-            info = data["data"]["user"]['edge_followed_by']
+            if options == 0:
+                info = data["data"]["user"]['edge_followed_by']
+            elif options == 1:
+                info = data["data"]["user"]['edge_followed_by']
             following = info['edges']
             for follow in following:
                 item = InstaparserItem()
-
                 node = follow['node']
                 item['_id'] = node["id"]
                 item['photo'] = node["profile_pic_url"]
@@ -169,45 +143,14 @@ class InstagramSpider(scrapy.Spider):
         if page_info['has_next_page']:
             variables['after'] = page_info['end_cursor']
             str_variables = self.make_str_variables(variables)
-            url = f"{self.graphql_url}query_hash={self.follow_hash['followers']}&variables={str_variables}"
+            url = f"{self.graphql_url}query_hash={self.follow_hash[self.variabls_follow[options]]}&variables={str_variables}"
             yield response.follow(
                 url,
                 callback=self.user_followers_parse,
                 cb_kwargs={
                     "username": username,
                     "variables": deepcopy(variables),
-                }
-            )
-
-    def user_followings_parse(self, response: HtmlResponse, username, variables):
-        print()
-        data = response.json()
-        try:
-            info = data["data"]["user"]['edge_follow']
-            following = info['edges']
-            for follow in following:
-                item = InstaparserItem()
-
-                node = follow['node']
-                item['_id'] = node["id"]
-                item['photo'] = node["profile_pic_url"]
-                item['name'] = node["full_name"]
-                item['username'] = node["username"]
-                item['followers'] = variables["id"]
-                yield item
-        except Exception as e:
-            print(e)
-        page_info = info['page_info']
-        if page_info['has_next_page']:
-            variables['after'] = page_info['end_cursor']
-            str_variables = self.make_str_variables(variables)
-            url = f"{self.graphql_url}query_hash={self.follow_hash['followings']}&variables={str_variables}"
-            yield response.follow(
-                url,
-                callback=self.user_followings_parse,
-                cb_kwargs={
-                    "username": username,
-                    "variables": deepcopy(variables),
+                    "options": options
                 }
             )
 
